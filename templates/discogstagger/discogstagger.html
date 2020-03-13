@@ -1,0 +1,422 @@
+{% extends 'martinbarker/base.html' %}
+{% block content %}
+<!--
+<script type="text/javascript" src="/static/js/discogstagger_script.js" defer></script>
+-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+<!-- Style-->
+<style type=text/css> #websiteTitle{ color:white; } body{ text-align: center; overflow: auto; } #urlInput{ text-align:
+    center; width: 400px; } table { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; } /*
+    adjsutments table styling */ #adjustments { font-family: "Trebuchet MS" , Arial, Helvetica, sans-serif;
+    border-collapse: collapse; width: 30%; } #adjustments td, #adjustments th { border: 1px solid #ddd; padding: 8px; }
+    #adjustments tr:nth-child(even){ background-color: #f2f2f2; } #adjustments th { padding-top: 12px; padding-bottom:
+    12px; text-align: center; background-color: rgb(48, 48, 48); color: white; } </style> <h4 class="widgettitle"><strong>How to use:</strong></h4>
+                            
+<li>Input a discogs release URL like so: </li>
+<a href = "https://www.discogs.com/Le-Car-Auto-Biography/release/41048">https://www.discogs.com/Le-Car-Auto-Biography/release/41048</a> 
+<li>Click 'submit' to generate a list of tags seperated by commas. </li>
+<li>Edit which tags you want to appear in the box with the table's sliders and checkboxes. </li>
+<h4 class="widgettitle"><strong>Input:</strong></h4>
+<div>
+    <form>
+        <input type="text" placeholder='Discogs release URL' name="url" id="urlInput">
+        <button name="data" type="button" onclick="getTags(document.getElementById('urlInput').value)">Submit</button>
+    </form>
+</div>
+
+<br>
+
+<h4 class="widgettitle"><strong>Tags:</strong></h4>
+<textarea id='tagsBox' rows="4" cols="50">
+        Input a url above and click submit !
+</textarea>
+<br>
+
+<!--
+    TagLimit: 458
+    "asd,asd,gsdf,adgf,asf"
+-->
+<div id='tagsHelperStuff' >
+    <div id='charCount' >Number of characters: 0</div> 
+    <br>
+    <button onclick="ShortenBoxTo500()">Shorten results to 500 chars (YouTube max limit)</button> 
+    <br> <br>
+    <!--
+
+            <button name="data" type="button" onclick="getTags(document.getElementById('urlInput').value)">Submit</button>
+    
+
+    -->
+    <table align="center" id='adjustments' >
+            <tr>
+              <th>Include</th>
+              <th>Tags Type</th>
+              <th>Depth</th>
+            </tr>
+
+            <tr>
+              <td>
+                  <input type="checkbox" class='releaseArtistsCheckbox' id="releaseArtistsCheckbox" checked onchange="prepUpdateTagsBox()">
+              </td>
+              <td>Release Artist(s)</td>
+              <td>
+                    <input type="range" class='releaseArtistsSlider' id='releaseArtistsSlider' min="0" max="100" value="100" onchange="prepUpdateTagsBox()" >
+                    <div id='releaseArtistsSliderValue'></div>
+              </td>
+            </tr>
+
+            <tr>
+                <td>
+                    <input type="checkbox" class='releaseInfoCheckbox' id="releaseInfoCheckbox" checked onchange="prepUpdateTagsBox()">
+                </td>
+                <td>Release Info</td>
+                <td>
+                    <input type="range" class='releaseInfoSlider' id='releaseInfoSlider' min="0" max="100" value="100" onchange="prepUpdateTagsBox()">
+                    <div id='releaseInfoSliderValue'></div>
+                </td>
+            </tr>
+            <tr>
+                    <td>
+                        <input type="checkbox" class='tracklistCheckbox' id="tracklistCheckbox" checked  onchange="prepUpdateTagsBox()">
+                    </td>
+                    <td>Tracklist</td>
+                    <td>
+                        <input type="range" class='tracklistSlider' id='tracklistSlider' min="0" max="100" value="100" onchange="prepUpdateTagsBox()">
+                        <div id='tracklistSliderValue'></div>
+                    </td>
+            </tr>
+            <!--
+            <tr>
+                    <td>
+                        <input type="checkbox" class='publisherNotesCheckbox' id="publisherNotesCheckbox" checked onchange="prepUpdateTagsBox()">
+                    </td>
+                    <td>Publisher / Notes</td>
+                    <td>
+                        <input type="range" class='publisherNotesSlider' id='publisherNotesSlider' min="0" max="100" value="100" onchange="prepUpdateTagsBox()">
+                        <div id='publisherNotesSliderValue'></div>
+                    </td>
+            </tr>
+            -->
+            <tr>
+                    <td>
+                        <input type="checkbox" class='combinationsCheckbox' id="combinationsCheckbox" checked onchange="prepUpdateTagsBox()">
+                    </td>
+                    <td>Combinations</td>
+                    <td>
+                        <input type="range" class='combinationsSlider' id='combinationsSlider' min="0" max="100" value="100" onchange="prepUpdateTagsBox()">
+                        <div id='combinationsSliderValue'></div>
+                    </td>
+            </tr>
+
+          </table>
+          
+</div>
+<br> <!--
+<button id="refreshTags" type="button" >Refresh Tags</button> -->
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/YUlqS6dNtOo" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+<div id="footerwrap">
+    <footer id="footer" class="pagewidth clearfix">
+
+
+
+        </footer>
+    </div>
+
+<script>
+
+    var tagsJsonGlobal = null;
+    var tagsJsonDisplay = null;
+
+    function ShortenBoxTo500(){
+        var currentTags = document.getElementById("tagsBox").value;
+        var trimmedString = currentTags.substring(0, 500);
+        document.getElementById("tagsBox").value = trimmedString
+        document.getElementById("charCount").innerText = "Number of characters: " + document.getElementById("tagsBox").value.length.toString();
+    }
+
+    function getValues(id) {
+        return new Promise(async function (resolve, reject) {
+            var tempVar = '';
+            var dataVar = String(id);//'id=' + id;
+            var csrftoken = getCookie('csrftoken');
+
+            console.log("getValues()")
+
+            let successValue = await makeAjax(dataVar, csrftoken);
+
+            console.log("getValues(), successValue = " + successValue)
+
+            //var decodedStr = decodeURIComponent(escape(successValue));
+
+            //var parsed = JSON.parse(decodedStr)
+
+            //var parsed = JSON.parse(successValue)
+
+            //console.log("ppppppppppppppppppppparsed = " + parsed)
+
+            resolve(successValue)
+
+        });
+
+    }
+
+
+    function makeAjax(dataVar, csrftoken) {
+        return new Promise(function (resolve, reject) {
+            console.log("making ajax reqeust to get data. header set")
+            $.ajax({
+                type: "POST",
+                url: '/my-ajax-test/',
+                headers: { 'ACookieAvailableCrossSite': 'SameSite=None' },
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', data: dataVar }, //new csrf
+            }).done(function callback(response) {
+                console.log("ajax request to /my-ajax-test/ was a success !")
+                console.log("response = ", response)
+                
+                console.log("JSON.parse(response) = ", JSON.parse(response))
+                //console.log("JSON.stringify(response) = ", JSON.stringify(response))
+                //console.log("JSON.loads(response) = ", JSON.loads(response))       //no json.loads function
+                //console.log("json.dumps(response, ensure_ascii=False) = ", JSON.dumps(response, ensure_ascii='False'))
+                
+                resolve(JSON.parse(response))
+                //resolve(JSON.stringify(JSON.parse(response)))
+                //resolve(JSON.stringify(response))
+
+            }).fail(function (error) {
+                console.log("ajax request to /my-ajax-test/ failed!");
+                console.log(error)
+            });
+        });
+    }
+
+    /*
+$.ajax({
+                            type: "POST",
+                            url: '/popularifyGetReleases/',
+                            data: { csrfmiddlewaretoken: '{{ csrf_token }}', data: artistURI },
+                            success: function (msg) {
+                                resolve(msg)
+                            }
+                        });
+
+    */
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function getAllTags(jsonObj) {
+        console.log("getAllTags(), jsonObj = " + jsonObj)
+        console.log("getAllTags(), jsonObj = " + JSON.stringify(jsonObj))
+        //get count of elements in 'tags'
+        var count = Object.keys(jsonObj.tags).length;
+        var allTags = "";
+        for (var key in jsonObj.tags) {
+            if (jsonObj.tags.hasOwnProperty(key)) {
+                //console.log(key + " -> " + jsonObj.tags[key]);
+                if (allTags.includes(jsonObj.tags[key])) {
+
+                } else {
+                    allTags = allTags + jsonObj.tags[key] + ",";
+                }
+            }
+        }
+        return allTags;
+    }
+
+    async function getTags(input) {
+        console.log("inside /staticfiles/ getTags, input = ", input)
+        //parse release id from url
+        var index = input.indexOf("release/");
+        var releaseID = input.substring(index + 8, input.length);
+
+        //make ajax request to python for tags based on passed in release id
+        let results = await getValues(releaseID);
+        console.log("getTags(), results = ", results)
+
+        //replace slashes
+        //var finalData = results.replace(/\\/g, "");
+        //console.log("getTags(), finalData = ", finalData)
+        //remove first and last char
+        //finalData = finalData.substring(1, finalData.length - 1);
+        //console.log("getTags(), finalData = ", finalData)
+
+        //convert to json
+        //var jsonResults = JSON.parse(finalData);
+        var jsonResults = results;
+        //console.log("getTags(), jsonResults = ", jsonResults)
+
+        //store as global variable?
+        tagsJsonGlobal = jsonResults;
+        tagsJsonDisplay = jsonResults;
+
+        var tagsAll = getAllTags(jsonResults);
+        console.log("tagsAll = ", tagsAll);
+
+        var releaseArtistsCheckboxValue = $('.releaseArtistsCheckbox:checked').val();
+        var releaseArtistsSliderValue = $('.releaseArtistsSlider').val();
+
+        var releaseInfoCheckboxValue = $('.releaseInfoCheckbox:checked').val();
+        var releaseInfoSliderValue = $('.releaseInfoSlider').val();
+
+        var tracklistCheckboxValue = $('.tracklistCheckbox:checked').val();
+        var tracklistSliderValue = $('.tracklistSlider').val();
+
+        //var publisherNotesCheckboxValue = $('.publisherNotesCheckbox:checked').val();
+        //var publisherNotesSliderValue = $('.publisherNotesSlider').val();
+
+        var combinationsCheckboxValue = $('.combinationsCheckbox:checked').val();
+        var combinationsSliderValue = $('.combinationsSlider').val();
+
+        //updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, publisherNotesCheckboxValue, publisherNotesSliderValue, combinationsCheckboxValue, combinationsSliderValue);
+        updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, combinationsCheckboxValue, combinationsSliderValue);
+
+        //set tags
+        document.getElementById("tagsBox").value = tagsAll;
+        //reveal helper stuff
+        //document.getElementById("tagsHelperStuff").style.visibility = "visible";
+
+        return false;
+    }
+
+    function prepUpdateTagsBox() {
+        var releaseArtistsCheckboxValue = $('.releaseArtistsCheckbox:checked').val();
+        var releaseArtistsSliderValue = $('.releaseArtistsSlider').val();
+
+        var releaseInfoCheckboxValue = $('.releaseInfoCheckbox:checked').val();
+        var releaseInfoSliderValue = $('.releaseInfoSlider').val();
+
+        var tracklistCheckboxValue = $('.tracklistCheckbox:checked').val();
+        var tracklistSliderValue = $('.tracklistSlider').val();
+
+        //var publisherNotesCheckboxValue = $('.publisherNotesCheckbox:checked').val();
+        //var publisherNotesSliderValue = $('.publisherNotesSlider').val();
+
+        var combinationsCheckboxValue = $('.combinationsCheckbox:checked').val();
+        var combinationsSliderValue = $('.combinationsSlider').val();
+
+        //updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, publisherNotesCheckboxValue, publisherNotesSliderValue, combinationsCheckboxValue, combinationsSliderValue);
+        updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, combinationsCheckboxValue, combinationsSliderValue);
+
+    }
+    function updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, combinationsCheckboxValue, combinationsSliderValue) {
+        //function updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, publisherNotesCheckboxValue, publisherNotesSliderValue, combinationsCheckboxValue, combinationsSliderValue){
+        console.log("releaseArtists checkbox = ", releaseArtistsCheckboxValue, ". slider = ", releaseArtistsSliderValue)
+        console.log("releaseInfo checkbox = ", releaseInfoCheckboxValue, ". slider = ", releaseInfoSliderValue)
+        console.log("tracklist checkbox = ", tracklistCheckboxValue, ". slider = ", tracklistSliderValue)
+        //console.log("publisherNotes checkbox = ", publisherNotesCheckboxValue, ". slider = ", publisherNotesSliderValue)
+        console.log("combinations checkbox = ", combinationsCheckboxValue, ". slider = ", combinationsSliderValue)
+
+        var tags = "";
+
+        if (releaseArtistsCheckboxValue == 'on') {
+            tags = tags + addTags(tagsJsonGlobal.tags.releaseArtist, (releaseArtistsSliderValue / 100));
+        }
+
+        if (releaseInfoCheckboxValue == 'on') {
+            tags = tags + addTags(tagsJsonGlobal.tags.releaseInfo, (releaseInfoSliderValue / 100));
+        }
+
+        if (tracklistCheckboxValue == 'on') {
+            tags = tags + addTags(tagsJsonGlobal.tags.tracklist, (tracklistSliderValue / 100));
+        }
+
+        //if(publisherNotesCheckboxValue == 'on'){
+        //    tags = tags + addTags(tagsJsonGlobal.tags.publisherNotes, (publisherNotesSliderValue / 100));
+        //}
+
+        if (combinationsCheckboxValue == 'on') {
+            tags = tags + addTags(tagsJsonGlobal.tags.combinations, (combinationsSliderValue / 100));
+        }
+
+        document.getElementById("tagsBox").value = tags;
+        document.getElementById("charCount").innerText = "Number of characters: " + tags.length.toString();
+    }
+
+    function addTags(tags, percentToInclude) {
+        var tempTags = "";
+
+        var numberOfTagsAvailiable = tags.length;
+        var numberOfTagsToDisplay = numberOfTagsAvailiable * percentToInclude;
+        numberOfTagsToDisplay = ~~numberOfTagsToDisplay;
+        for (var i = 0; i < numberOfTagsToDisplay; i++) {
+            tempTags = tempTags + tags[i] + ","
+        }
+        return tempTags;
+    }
+
+
+    //releaseArtist precentage update : declarations
+    releaseArtist_i = document.getElementById('releaseArtistsSlider');
+    releaseArtist_o = document.getElementById('releaseArtistsSliderValue');
+    releaseArtist_o.innerHTML = releaseArtist_i.value;
+    //setting initial value
+    releaseArtist_o.innerHTML = releaseArtist_i.value.toString() + "%";
+    //listening and setting when slider changes
+    releaseArtist_i.addEventListener('input', function () {
+        releaseArtist_o.innerHTML = releaseArtist_i.value.toString() + "%";
+    }, false);
+
+    //releaseInfo precentage update : declarations
+    releaseInfo_i = document.getElementById('releaseInfoSlider');
+    releaseInfo_o = document.getElementById('releaseInfoSliderValue');
+    releaseInfo_o.innerHTML = releaseInfo_i.value;
+    //setting initial value
+    releaseInfo_o.innerHTML = releaseInfo_i.value.toString() + "%";
+    //listening and setting when slider changes
+    releaseInfo_i.addEventListener('input', function () {
+        releaseInfo_o.innerHTML = releaseInfo_i.value.toString() + "%";
+    }, false);
+
+    //tracklist precentage update : declarations
+    tracklist_i = document.getElementById('tracklistSlider');
+    tracklist_o = document.getElementById('tracklistSliderValue');
+    tracklist_o.innerHTML = tracklist_i.value;
+    //setting initial value
+    tracklist_o.innerHTML = tracklist_i.value.toString() + "%";
+    //listening and setting when slider changes
+    tracklist_i.addEventListener('input', function () {
+        tracklist_o.innerHTML = tracklist_i.value.toString() + "%";
+    }, false);
+
+    /*
+    //publisherNotes precentage update : declarations
+    publisherNotes_i = document.getElementById('publisherNotesSlider');
+    publisherNotes_o = document.getElementById('publisherNotesSliderValue');
+    publisherNotes_o.innerHTML = publisherNotes_i.value;
+    //setting initial value
+    publisherNotes_o.innerHTML = publisherNotes_i.value.toString() + "%";
+    //listening and setting when slider changes
+    publisherNotes_i.addEventListener('input', function () {  
+        publisherNotes_o.innerHTML = publisherNotes_i.value.toString() + "%";
+    }, false);
+    */
+
+    //combinations precentage update : declarations
+    combinations_i = document.getElementById('combinationsSlider');
+    combinations_o = document.getElementById('combinationsSliderValue');
+    combinations_o.innerHTML = combinations_i.value;
+    //setting initial value
+    combinations_o.innerHTML = combinations_i.value.toString() + "%";
+    //listening and setting when slider changes
+    combinations_i.addEventListener('input', function () {
+        combinations_o.innerHTML = combinations_i.value.toString() + "%";
+    }, false);
+
+</script>
+
+{% endblock %}
