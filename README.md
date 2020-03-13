@@ -1,2 +1,2 @@
-# martinbarker.me
-My suite of websites
+push github master branch to heroku:
+git push heroku master

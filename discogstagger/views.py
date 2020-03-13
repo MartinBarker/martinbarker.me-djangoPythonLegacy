@@ -12,9 +12,7 @@ import spotipy.util as util
 import random
 from datetime import datetime
 import datetime
-
 from django.http import JsonResponse
-
 from urllib.parse import unquote
 
 def index(request):

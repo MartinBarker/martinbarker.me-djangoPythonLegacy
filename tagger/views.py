@@ -12,15 +12,10 @@ import spotipy.util as util
 import random
 from datetime import datetime
 import datetime
-
 from django.http import JsonResponse
-
 from urllib.parse import unquote
 
 def index(request):
-    #template = loader.get_template("tagger/index.html")
-    #return HttpResponse(template.render())
-
     context = {'pageName': "tagger.site", 'icon':'https://cdn4.iconfinder.com/data/icons/48-bubbles/48/06.Tags-512.png' }
     return render(request, 'tagger/index.html', context)
 
@@ -29,34 +24,13 @@ def discogsURL(request):
     releaseId = str(request)[:-2]
     releaseId = releaseId[releaseId.index('&data=')+6:]
     print("releaseId = ", releaseId)
-    
-    #print('path = ', request.path)
-    #print('body = ', request.body)
-    #print('str body = ', str(request.body))
-    #print('data = ', request.body.json())
-    #print("request.POST['text'] = ", request.text)
-
-    #body = request.body
-    #parse releaseId from post request, convert to string
-    #body = body.decode('utf-8')
-    #print(' body = ', body)
-    
-    #indexOfReleaseId = body.index("&data=")
-    #releaseId = request.body[indexOfReleaseId+6:]
-    #releaseId = releaseId.decode("utf-8")
-    
-    print("releaseId = ", releaseId)
     #generate tags for this releaseId
     data = generateTracklist(releaseId)
     print("taggerpy() final data = ")
     print(data)
     #return the tags
-    
     response_data = {}
     response_data['tracklist'] = data
-    #response_data['tracklist'] = 'test'
-
-    #data = "temp popularify_py() Return Data"
     return HttpResponse(json.dumps(response_data))
 
 
@@ -75,12 +49,9 @@ def generateTracklist(releaseID):
             if hasattr(track, 'duration') and track.duration != '':
                 print(track.title, ' ', track.duration)
                 trackDurationMinutes = track.duration
-                
                 #convert time to seconds
                 chunks = map(int, trackDurationMinutes.split(':')[::-1])
                 trackDurationSeconds = sum(chunk*60**i for i,chunk in enumerate(chunks))
-
-                #append [title, trackDurationSeconds] to tracklistArr
                 tracklistArr.append([ track.title , trackDurationSeconds])
                 count = count+1
             else:
@@ -88,8 +59,7 @@ def generateTracklist(releaseID):
 
     #make sure each track has duration before continuing
     if everyTrackHasDuration:
-        print("tracklistArr = ")
-        print(tracklistArr)
+        print("tracklistArr = ", tracklistArr)
         finalTracklist = calculateTracklist(tracklistArr)
         return finalTracklist
     else:

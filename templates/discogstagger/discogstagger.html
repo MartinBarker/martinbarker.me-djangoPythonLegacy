@@ -141,21 +141,9 @@
             var tempVar = '';
             var dataVar = String(id);//'id=' + id;
             var csrftoken = getCookie('csrftoken');
-
             console.log("getValues()")
-
             let successValue = await makeAjax(dataVar, csrftoken);
-
             console.log("getValues(), successValue = " + successValue)
-
-            //var decodedStr = decodeURIComponent(escape(successValue));
-
-            //var parsed = JSON.parse(decodedStr)
-
-            //var parsed = JSON.parse(successValue)
-
-            //console.log("ppppppppppppppppppppparsed = " + parsed)
-
             resolve(successValue)
 
         });
@@ -174,34 +162,14 @@
             }).done(function callback(response) {
                 console.log("ajax request to /my-ajax-test/ was a success !")
                 console.log("response = ", response)
-                
                 console.log("JSON.parse(response) = ", JSON.parse(response))
-                //console.log("JSON.stringify(response) = ", JSON.stringify(response))
-                //console.log("JSON.loads(response) = ", JSON.loads(response))       //no json.loads function
-                //console.log("json.dumps(response, ensure_ascii=False) = ", JSON.dumps(response, ensure_ascii='False'))
-                
                 resolve(JSON.parse(response))
-                //resolve(JSON.stringify(JSON.parse(response)))
-                //resolve(JSON.stringify(response))
-
             }).fail(function (error) {
                 console.log("ajax request to /my-ajax-test/ failed!");
                 console.log(error)
             });
         });
     }
-
-    /*
-$.ajax({
-                            type: "POST",
-                            url: '/popularifyGetReleases/',
-                            data: { csrfmiddlewaretoken: '{{ csrf_token }}', data: artistURI },
-                            success: function (msg) {
-                                resolve(msg)
-                            }
-                        });
-
-    */
 
     function getCookie(name) {
         var cookieValue = null;
@@ -243,30 +211,14 @@ $.ajax({
         //parse release id from url
         var index = input.indexOf("release/");
         var releaseID = input.substring(index + 8, input.length);
-
         //make ajax request to python for tags based on passed in release id
         let results = await getValues(releaseID);
         console.log("getTags(), results = ", results)
-
-        //replace slashes
-        //var finalData = results.replace(/\\/g, "");
-        //console.log("getTags(), finalData = ", finalData)
-        //remove first and last char
-        //finalData = finalData.substring(1, finalData.length - 1);
-        //console.log("getTags(), finalData = ", finalData)
-
-        //convert to json
-        //var jsonResults = JSON.parse(finalData);
         var jsonResults = results;
-        //console.log("getTags(), jsonResults = ", jsonResults)
-
-        //store as global variable?
         tagsJsonGlobal = jsonResults;
         tagsJsonDisplay = jsonResults;
-
         var tagsAll = getAllTags(jsonResults);
         console.log("tagsAll = ", tagsAll);
-
         var releaseArtistsCheckboxValue = $('.releaseArtistsCheckbox:checked').val();
         var releaseArtistsSliderValue = $('.releaseArtistsSlider').val();
 
@@ -276,20 +228,12 @@ $.ajax({
         var tracklistCheckboxValue = $('.tracklistCheckbox:checked').val();
         var tracklistSliderValue = $('.tracklistSlider').val();
 
-        //var publisherNotesCheckboxValue = $('.publisherNotesCheckbox:checked').val();
-        //var publisherNotesSliderValue = $('.publisherNotesSlider').val();
-
         var combinationsCheckboxValue = $('.combinationsCheckbox:checked').val();
         var combinationsSliderValue = $('.combinationsSlider').val();
 
-        //updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, publisherNotesCheckboxValue, publisherNotesSliderValue, combinationsCheckboxValue, combinationsSliderValue);
         updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, combinationsCheckboxValue, combinationsSliderValue);
-
         //set tags
         document.getElementById("tagsBox").value = tagsAll;
-        //reveal helper stuff
-        //document.getElementById("tagsHelperStuff").style.visibility = "visible";
-
         return false;
     }
 
@@ -303,26 +247,18 @@ $.ajax({
         var tracklistCheckboxValue = $('.tracklistCheckbox:checked').val();
         var tracklistSliderValue = $('.tracklistSlider').val();
 
-        //var publisherNotesCheckboxValue = $('.publisherNotesCheckbox:checked').val();
-        //var publisherNotesSliderValue = $('.publisherNotesSlider').val();
-
         var combinationsCheckboxValue = $('.combinationsCheckbox:checked').val();
         var combinationsSliderValue = $('.combinationsSlider').val();
 
-        //updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, publisherNotesCheckboxValue, publisherNotesSliderValue, combinationsCheckboxValue, combinationsSliderValue);
         updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, combinationsCheckboxValue, combinationsSliderValue);
 
     }
     function updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, combinationsCheckboxValue, combinationsSliderValue) {
-        //function updateTagsBox(releaseArtistsCheckboxValue, releaseArtistsSliderValue, releaseInfoCheckboxValue, releaseInfoSliderValue, tracklistCheckboxValue, tracklistSliderValue, publisherNotesCheckboxValue, publisherNotesSliderValue, combinationsCheckboxValue, combinationsSliderValue){
         console.log("releaseArtists checkbox = ", releaseArtistsCheckboxValue, ". slider = ", releaseArtistsSliderValue)
         console.log("releaseInfo checkbox = ", releaseInfoCheckboxValue, ". slider = ", releaseInfoSliderValue)
         console.log("tracklist checkbox = ", tracklistCheckboxValue, ". slider = ", tracklistSliderValue)
-        //console.log("publisherNotes checkbox = ", publisherNotesCheckboxValue, ". slider = ", publisherNotesSliderValue)
         console.log("combinations checkbox = ", combinationsCheckboxValue, ". slider = ", combinationsSliderValue)
-
         var tags = "";
-
         if (releaseArtistsCheckboxValue == 'on') {
             tags = tags + addTags(tagsJsonGlobal.tags.releaseArtist, (releaseArtistsSliderValue / 100));
         }
@@ -335,10 +271,6 @@ $.ajax({
             tags = tags + addTags(tagsJsonGlobal.tags.tracklist, (tracklistSliderValue / 100));
         }
 
-        //if(publisherNotesCheckboxValue == 'on'){
-        //    tags = tags + addTags(tagsJsonGlobal.tags.publisherNotes, (publisherNotesSliderValue / 100));
-        //}
-
         if (combinationsCheckboxValue == 'on') {
             tags = tags + addTags(tagsJsonGlobal.tags.combinations, (combinationsSliderValue / 100));
         }
@@ -349,7 +281,6 @@ $.ajax({
 
     function addTags(tags, percentToInclude) {
         var tempTags = "";
-
         var numberOfTagsAvailiable = tags.length;
         var numberOfTagsToDisplay = numberOfTagsAvailiable * percentToInclude;
         numberOfTagsToDisplay = ~~numberOfTagsToDisplay;
@@ -370,7 +301,6 @@ $.ajax({
     releaseArtist_i.addEventListener('input', function () {
         releaseArtist_o.innerHTML = releaseArtist_i.value.toString() + "%";
     }, false);
-
     //releaseInfo precentage update : declarations
     releaseInfo_i = document.getElementById('releaseInfoSlider');
     releaseInfo_o = document.getElementById('releaseInfoSliderValue');
@@ -381,7 +311,6 @@ $.ajax({
     releaseInfo_i.addEventListener('input', function () {
         releaseInfo_o.innerHTML = releaseInfo_i.value.toString() + "%";
     }, false);
-
     //tracklist precentage update : declarations
     tracklist_i = document.getElementById('tracklistSlider');
     tracklist_o = document.getElementById('tracklistSliderValue');
@@ -392,20 +321,6 @@ $.ajax({
     tracklist_i.addEventListener('input', function () {
         tracklist_o.innerHTML = tracklist_i.value.toString() + "%";
     }, false);
-
-    /*
-    //publisherNotes precentage update : declarations
-    publisherNotes_i = document.getElementById('publisherNotesSlider');
-    publisherNotes_o = document.getElementById('publisherNotesSliderValue');
-    publisherNotes_o.innerHTML = publisherNotes_i.value;
-    //setting initial value
-    publisherNotes_o.innerHTML = publisherNotes_i.value.toString() + "%";
-    //listening and setting when slider changes
-    publisherNotes_i.addEventListener('input', function () {  
-        publisherNotes_o.innerHTML = publisherNotes_i.value.toString() + "%";
-    }, false);
-    */
-
     //combinations precentage update : declarations
     combinations_i = document.getElementById('combinationsSlider');
     combinations_o = document.getElementById('combinationsSliderValue');
